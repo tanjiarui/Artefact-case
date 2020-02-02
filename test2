@@ -1,0 +1,26 @@
+Environment:hadoop,hive,pandas
+1.run test2.py to insert the column year into order dataset
+
+2.hive operation
+#create customer table
+create table customer(id string comment 'customer id',country string comment 'country of this customer',order_id string comment 'order id') row format delimited fields terminated by ',';
+load data local inpath '/home/ubuntu/Artefact_written_test/test2_data/customer.csv' overwrite into table customer;
+#create product table
+create table product(id string comment 'prodect id',name string comment 'product name') row format delimited fields terminated by '\t';
+load data local inpath '/home/ubuntu/Artefact_written_test/test2_data/product.csv' overwrite into table product;
+#create orders table
+create table orders(id string comment 'order id',product_id string comment 'product id',quantity int comment 'quantity of the purchase',order_date string comment 'date of the order',year int comment 'year of the order') row format delimited fields terminated by ',';
+load data local inpath '/home/ubuntu/Artefact_written_test/test2_data/order.csv' overwrite into table orders;
+#create tmp to merge columns
+create table tmp as select orders.id,orders.product_id,orders.quantity,customer.country,orders.year from customer join orders on customer.order_id=orders.id;
+#group country and year together, sum up quantity of the same product
+create table top_sell as select product_id,sell,country,year from (select product_id,sum(quantity) sell,country,year from tmp group by country,year,product_id) as tmp order by country,year,sell desc;
+insert overwrite table top_sell select top_sell.product_id,top_sell.sell,top_sell.country,top_sell.year,product.name from top_sell join product on top_sell.product_id=product.id;
+#select top10 product,export to a local path
+hive -e 'select result.* from (select *,dense_rank() over (partition by country,year order by sell desc) as rank from artefact.top_sell) as result where result.rank<11;' > /home/ubuntu/Artefact_written_test/test2_data/top_sell.csv
+
+top_sell is the result of top 10 selling products for each country of each year
+
+3.R operation, visualize the sum of top 10 sells for each country of each year
+install REmap and devtools packages
+run test2.r

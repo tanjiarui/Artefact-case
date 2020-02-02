@@ -1,0 +1,4 @@
+Environment: ubuntu19.04, MongoDB Compass, pymongo, python3.7
+mongodb://localhost:27017 as connection port, Artefact as db name, superhero as collection name
+1.import CSV from Compass, the "Height" field is set as string by default
+2.python3.7 test1.py -gender 'input' -height 'input'
